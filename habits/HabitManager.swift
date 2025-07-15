@@ -24,10 +24,10 @@ class HabitManager: ObservableObject {
     
     private func createSampleHabits() {
         habits = [
-            Habit(name: "Exercitar", icon: "figure.run", color: .blue, streak: 5, completedDates: Set(getLastDays(5)), target: 5, isAllDays: true),
-            Habit(name: "Meditar", icon: "leaf.fill", color: .green, streak: 3, completedDates: Set(getLastDays(3)), target: 7, isAllDays: true),
-            Habit(name: "Ler", icon: "book.fill", color: .orange, streak: 7, completedDates: Set(getLastDays(7)), target: 6, selectedDays: [2, 3, 4, 5, 6, 7], isAllDays: false),
-            Habit(name: "Água", icon: "drop.fill", color: .cyan, streak: 10, completedDates: Set(getLastDays(10)), target: 7, isAllDays: true)
+            Habit(name: "Exercitar", icon: "🏃‍♀️", color: .blue, streak: 5, completedDates: Set(getLastDays(5)), target: 5, isAllDays: true),
+            Habit(name: "Meditar", icon: "🧘‍♀️", color: .green, streak: 3, completedDates: Set(getLastDays(3)), target: 7, isAllDays: true),
+            Habit(name: "Ler", icon: "📚", color: .orange, streak: 7, completedDates: Set(getLastDays(7)), target: 6, selectedDays: [2, 3, 4, 5, 6, 7], isAllDays: false),
+            Habit(name: "Beber Água", icon: "💧", color: .cyan, streak: 10, completedDates: Set(getLastDays(10)), target: 7, isAllDays: true)
         ]
         saveHabits()
     }

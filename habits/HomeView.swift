@@ -140,9 +140,8 @@ struct HabitCard: View {
         NavigationLink(destination: HabitDetailView(habitManager: habitManager, habit: habit)) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Image(systemName: habit.icon)
+                    Text(habit.icon)
                         .font(.title2)
-                        .foregroundColor(habit.color)
                         .frame(width: 32, height: 32)
                     
                     VStack(alignment: .leading, spacing: 4) {

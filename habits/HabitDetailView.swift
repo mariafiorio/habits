@@ -18,9 +18,8 @@ struct HabitDetailView: View {
             VStack(spacing: 20) {
                 // Header
                 VStack(spacing: 16) {
-                    Image(systemName: habit.icon)
+                    Text(habit.icon)
                         .font(.system(size: 60))
-                        .foregroundColor(habit.color)
                     
                     Text(habit.name)
                         .font(.largeTitle)
@@ -224,8 +223,8 @@ struct EditHabitSheet: View {
     @State private var reminders: [HabitReminder]
     @State private var showingReminderSheet = false
     
-    private let icons = ["star.fill", "heart.fill", "book.fill", "figure.run", "leaf.fill", "drop.fill", "moon.fill", "sun.max.fill", "brain.head.profile", "dumbbell.fill", "pills.fill", "bed.double.fill", "house.fill", "car.fill", "airplane", "gamecontroller.fill", "music.note", "camera.fill", "pencil", "scissors"]
-    private let colors: [Color] = [.blue, .green, .orange, .red, .purple, .cyan, .pink, .yellow, .indigo, .mint, .brown, .gray]
+    private let emojis = ["⭐", "❤️", "📚", "🏃‍♀️", "🍃", "💧", "🌙", "☀️", "🧠", "💪", "💊", "🛏️", "🏠", "🚗", "✈️", "🎮", "🎵", "📷", "✏️", "✂️", "🏋️‍♀️", "🧘‍♀️", "🚴‍♀️", "🏊‍♀️", "🎯", "🎨", "📝", "🔋", "🌱", "🍎", "💡", "🎪", "🎭", "🎨", "📖", "🎓", "🏆", "🌟", "💎", "🎁", "🎈"]
+    private let colors: [Color] = [.blue, .green, .orange, .red, .purple, .cyan, .pink, .yellow, .indigo, .mint, .brown, .gray, .teal, .purple, .orange]
     private let dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
     
     init(habitManager: HabitManager, habit: Habit) {
@@ -278,8 +277,19 @@ struct EditHabitSheet: View {
                                             .frame(width: 40, height: 40)
                                             .background(selectedDays.contains(day) ? selectedColor : Color.gray.opacity(0.2))
                                             .cornerRadius(20)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 20)
+                                                    .stroke(selectedDays.contains(day) ? selectedColor : Color.clear, lineWidth: 2)
+                                            )
                                     }
                                 }
+                            }
+                            
+                            if !selectedDays.isEmpty {
+                                Text("Dias selecionados: \(selectedDays.sorted().map { dayNames[$0 - 1] }.joined(separator: ", "))")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .padding(.top, 4)
                             }
                         }
                     }
@@ -318,18 +328,42 @@ struct EditHabitSheet: View {
                     }
                 }
                 
-                Section("Ícone") {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 16) {
-                        ForEach(icons, id: \.self) { icon in
-                            Button(action: {
-                                selectedIcon = icon
-                            }) {
-                                Image(systemName: icon)
-                                    .font(.title2)
-                                    .foregroundColor(selectedIcon == icon ? selectedColor : .gray)
-                                    .frame(width: 44, height: 44)
-                                    .background(selectedIcon == icon ? selectedColor.opacity(0.1) : Color.clear)
-                                    .cornerRadius(8)
+                Section("Emoji") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Emoji personalizado:")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        TextField("Digite um emoji (ex: 🎯)", text: $selectedIcon)
+                            .font(.title2)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .onChange(of: selectedIcon) { newValue in
+                                // Limita a apenas um emoji
+                                if newValue.count > 2 {
+                                    selectedIcon = String(newValue.prefix(2))
+                                }
+                            }
+                        
+                        Text("Ou escolha um emoji:")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 8)
+                        
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 8), spacing: 12) {
+                            ForEach(emojis, id: \.self) { emoji in
+                                Button(action: {
+                                    selectedIcon = emoji
+                                }) {
+                                    Text(emoji)
+                                        .font(.title)
+                                        .frame(width: 44, height: 44)
+                                        .background(selectedIcon == emoji ? selectedColor.opacity(0.2) : Color.gray.opacity(0.1))
+                                        .cornerRadius(8)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(selectedIcon == emoji ? selectedColor : Color.clear, lineWidth: 2)
+                                        )
+                                }
                             }
                         }
                     }
@@ -337,7 +371,7 @@ struct EditHabitSheet: View {
                 
                 Section("Cor") {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 16) {
-                        ForEach(colors, id: \.self) { color in
+                        ForEach(Array(colors.enumerated()), id: \.offset) { index, color in
                             Button(action: {
                                 selectedColor = color
                             }) {
@@ -346,7 +380,11 @@ struct EditHabitSheet: View {
                                     .frame(width: 44, height: 44)
                                     .overlay(
                                         Circle()
-                                            .stroke(Color.primary, lineWidth: selectedColor == color ? 2 : 0)
+                                            .stroke(Color.primary, lineWidth: selectedColor == color ? 3 : 0)
+                                    )
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.white, lineWidth: selectedColor == color ? 1 : 0)
                                     )
                             }
                         }
@@ -364,12 +402,12 @@ struct EditHabitSheet: View {
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Salvar") {
-                        if !name.isEmpty && (isAllDays || !selectedDays.isEmpty) {
+                        if !name.isEmpty && (isAllDays || !selectedDays.isEmpty) && !selectedIcon.isEmpty {
                             updateHabit()
                             presentationMode.wrappedValue.dismiss()
                         }
                     }
-                    .disabled(name.isEmpty || (!isAllDays && selectedDays.isEmpty))
+                    .disabled(name.isEmpty || selectedIcon.isEmpty || (!isAllDays && selectedDays.isEmpty))
                 }
             }
             .sheet(isPresented: $showingReminderSheet) {
