@@ -24,10 +24,10 @@ class HabitManager: ObservableObject {
     
     private func createSampleHabits() {
         habits = [
-            Habit(name: "Exercitar", icon: "figure.run", color: .blue, streak: 5, completedDates: Set(getLastDays(5)), target: 5),
-            Habit(name: "Meditar", icon: "leaf.fill", color: .green, streak: 3, completedDates: Set(getLastDays(3)), target: 7),
-            Habit(name: "Ler", icon: "book.fill", color: .orange, streak: 7, completedDates: Set(getLastDays(7)), target: 6),
-            Habit(name: "Água", icon: "drop.fill", color: .cyan, streak: 10, completedDates: Set(getLastDays(10)), target: 7)
+            Habit(name: "Exercitar", icon: "figure.run", color: .blue, streak: 5, completedDates: Set(getLastDays(5)), target: 5, isAllDays: true),
+            Habit(name: "Meditar", icon: "leaf.fill", color: .green, streak: 3, completedDates: Set(getLastDays(3)), target: 7, isAllDays: true),
+            Habit(name: "Ler", icon: "book.fill", color: .orange, streak: 7, completedDates: Set(getLastDays(7)), target: 6, selectedDays: [2, 3, 4, 5, 6, 7], isAllDays: false),
+            Habit(name: "Água", icon: "drop.fill", color: .cyan, streak: 10, completedDates: Set(getLastDays(10)), target: 7, isAllDays: true)
         ]
         saveHabits()
     }
@@ -58,13 +58,22 @@ class HabitManager: ObservableObject {
         saveHabits()
     }
     
-    func addHabit(name: String, icon: String, color: Color, target: Int) {
-        let habit = Habit(name: name, icon: icon, color: color, target: target)
+    func addHabit(name: String, icon: String, color: Color, target: Int, selectedDays: Set<Int> = [], reminders: [HabitReminder] = [], isAllDays: Bool = true) {
+        let habit = Habit(name: name, icon: icon, color: color, target: target, selectedDays: selectedDays, reminders: reminders, isAllDays: isAllDays)
         habits.append(habit)
         saveHabits()
+        
+        // Schedule reminders if any
+        scheduleReminders(for: habit)
+    }
+    
+    private func scheduleReminders(for habit: Habit) {
+        NotificationManager.shared.scheduleReminders(for: habit)
     }
     
     func deleteHabit(_ habit: Habit) {
+        // Remove notifications before deleting
+        NotificationManager.shared.removeReminders(for: habit)
         habits.removeAll { $0.id == habit.id }
         saveHabits()
     }
@@ -72,6 +81,12 @@ class HabitManager: ObservableObject {
     func updateProfile(_ profile: UserProfile) {
         userProfile = profile
         saveProfile()
+    }
+    
+    func saveHabits() {
+        if let encoded = try? JSONEncoder().encode(habits) {
+            UserDefaults.standard.set(encoded, forKey: "habits")
+        }
     }
     
     // MARK: - Statistics
@@ -97,12 +112,6 @@ class HabitManager: ObservableObject {
     }
     
     // MARK: - Persistence
-    private func saveHabits() {
-        if let encoded = try? JSONEncoder().encode(habits) {
-            UserDefaults.standard.set(encoded, forKey: "habits")
-        }
-    }
-    
     private func loadHabits() {
         if let data = UserDefaults.standard.data(forKey: "habits"),
            let decoded = try? JSONDecoder().decode([Habit].self, from: data) {

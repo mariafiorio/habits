@@ -132,70 +132,117 @@ struct HabitCard: View {
         return habit.completedDates.contains(today)
     }
     
+    private var shouldShowToday: Bool {
+        return habit.shouldBeDoneToday()
+    }
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: habit.icon)
-                    .font(.title2)
-                    .foregroundColor(habit.color)
-                    .frame(width: 32, height: 32)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(habit.name)
-                        .font(.headline)
-                        .foregroundColor(.primary)
+        NavigationLink(destination: HabitDetailView(habitManager: habitManager, habit: habit)) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: habit.icon)
+                        .font(.title2)
+                        .foregroundColor(habit.color)
+                        .frame(width: 32, height: 32)
                     
-                    Text("\(habit.streak) dias seguidos")
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(habit.name)
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        HStack(spacing: 8) {
+                            Text("\(habit.streak) dias seguidos")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            if !habit.isAllDays {
+                                Text("•")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                
+                                Text(habit.getDayNames().joined(separator: ", "))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    if shouldShowToday {
+                        Button(action: {
+                            withAnimation(.spring()) {
+                                habitManager.toggleHabit(habit)
+                            }
+                        }) {
+                            Image(systemName: isCompletedToday ? "checkmark.circle.fill" : "circle")
+                                .font(.title2)
+                                .foregroundColor(isCompletedToday ? habit.color : .gray)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    } else {
+                        Text("Hoje não")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(8)
+                    }
+                }
+                
+                // Progress bar
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(height: 8)
+                            .cornerRadius(4)
+                        
+                        Rectangle()
+                            .fill(habit.color)
+                            .frame(width: geometry.size.width * habit.completionRate, height: 8)
+                            .cornerRadius(4)
+                            .animation(.easeInOut, value: habit.completionRate)
+                    }
+                }
+                .frame(height: 8)
+                
+                HStack {
+                    Text("\(Int(habit.completionRate * 100))% desta semana")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    Text("\(habit.target) dias/semana")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
                 
-                Spacer()
-                
-                Button(action: {
-                    withAnimation(.spring()) {
-                        habitManager.toggleHabit(habit)
+                // Show reminders if any
+                if !habit.reminders.isEmpty {
+                    HStack {
+                        Image(systemName: "bell.fill")
+                            .font(.caption)
+                            .foregroundColor(habit.color)
+                        
+                        Text("\(habit.reminders.count) lembrete\(habit.reminders.count > 1 ? "s" : "")")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
                     }
-                }) {
-                    Image(systemName: isCompletedToday ? "checkmark.circle.fill" : "circle")
-                        .font(.title2)
-                        .foregroundColor(isCompletedToday ? habit.color : .gray)
                 }
             }
-            
-            // Progress bar
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(height: 8)
-                        .cornerRadius(4)
-                    
-                    Rectangle()
-                        .fill(habit.color)
-                        .frame(width: geometry.size.width * habit.completionRate, height: 8)
-                        .cornerRadius(4)
-                        .animation(.easeInOut, value: habit.completionRate)
-                }
-            }
-            .frame(height: 8)
-            
-            HStack {
-                Text("\(Int(habit.completionRate * 100))% desta semana")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Spacer()
-                
-                Text("\(habit.target) dias/semana")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(16)
+            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+            .opacity(shouldShowToday ? 1.0 : 0.6)
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+        .buttonStyle(PlainButtonStyle())
         .contextMenu {
             Button(role: .destructive) {
                 habitManager.deleteHabit(habit)

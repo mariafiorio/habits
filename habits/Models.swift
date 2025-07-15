@@ -9,6 +9,20 @@
 import SwiftUI
 import Foundation
 
+// MARK: - Reminder Model
+struct HabitReminder: Identifiable, Codable {
+    let id = UUID()
+    var time: Date
+    var isEnabled: Bool
+    var message: String
+    
+    init(time: Date = Date(), isEnabled: Bool = false, message: String = "") {
+        self.time = time
+        self.isEnabled = isEnabled
+        self.message = message
+    }
+}
+
 // MARK: - Habit Model
 struct Habit: Identifiable, Codable {
     let id = UUID()
@@ -19,8 +33,11 @@ struct Habit: Identifiable, Codable {
     var completedDates: Set<String>
     var target: Int // days per week
     var createdDate: Date
+    var selectedDays: Set<Int> // 1 = Sunday, 2 = Monday, ..., 7 = Saturday
+    var reminders: [HabitReminder]
+    var isAllDays: Bool // true if habit should be done every day
     
-    init(name: String, icon: String, color: Color, streak: Int = 0, completedDates: Set<String> = [], target: Int, createdDate: Date = Date()) {
+    init(name: String, icon: String, color: Color, streak: Int = 0, completedDates: Set<String> = [], target: Int, createdDate: Date = Date(), selectedDays: Set<Int> = [], reminders: [HabitReminder] = [], isAllDays: Bool = true) {
         self.name = name
         self.icon = icon
         self.color = color
@@ -28,6 +45,9 @@ struct Habit: Identifiable, Codable {
         self.completedDates = completedDates
         self.target = target
         self.createdDate = createdDate
+        self.selectedDays = selectedDays
+        self.reminders = reminders
+        self.isAllDays = isAllDays
     }
     
     var completionRate: Double {
@@ -53,6 +73,21 @@ struct Habit: Identifiable, Codable {
         let calendar = Calendar.current
         let daysSinceCreation = calendar.dateComponents([.day], from: createdDate, to: Date()).day ?? 0
         return max(1, daysSinceCreation + 1)
+    }
+    
+    // Helper method to get day names
+    func getDayNames() -> [String] {
+        let dayNames = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"]
+        return selectedDays.sorted().map { dayNames[$0 - 1] }
+    }
+    
+    // Helper method to check if habit should be done today
+    func shouldBeDoneToday() -> Bool {
+        if isAllDays { return true }
+        
+        let calendar = Calendar.current
+        let weekday = calendar.component(.weekday, from: Date())
+        return selectedDays.contains(weekday)
     }
 }
 
