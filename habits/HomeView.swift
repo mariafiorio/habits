@@ -12,6 +12,7 @@ import SwiftUI
 struct HomeView: View {
     @ObservedObject var habitManager: HabitManager
     @State private var showingAddHabit = false
+    @State private var showingCelebration = false
     
     var body: some View {
         NavigationView {
@@ -20,10 +21,48 @@ struct HomeView: View {
                     // Daily summary card
                     DailySummaryCard(habitManager: habitManager)
                     
-                    // Habits list
-                    LazyVStack(spacing: 16) {
-                        ForEach(habitManager.habits) { habit in
-                            HabitCard(habit: habit, habitManager: habitManager)
+                    if habitManager.habits.isEmpty {
+                        // Empty state
+                        VStack(spacing: 20) {
+                            Text("🎯")
+                                .font(.system(size: 60))
+                            
+                            Text("Nenhum hábito criado")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                            
+                            Text("Comece criando seu primeiro hábito para começar sua jornada de desenvolvimento pessoal!")
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                            
+                            Button(action: {
+                                showingAddHabit = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "plus.circle.fill")
+                                    Text("Criar Primeiro Hábito")
+                                }
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 12)
+                                .background(Color.blue)
+                                .cornerRadius(25)
+                            }
+                        }
+                        .padding(40)
+                        .background(Color(.systemBackground))
+                        .cornerRadius(16)
+                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                    } else {
+                        // Habits list
+                        LazyVStack(spacing: 16) {
+                            ForEach(habitManager.habits) { habit in
+                                HabitCard(habit: habit, habitManager: habitManager)
+                            }
                         }
                     }
                 }
@@ -44,6 +83,12 @@ struct HomeView: View {
             .sheet(isPresented: $showingAddHabit) {
                 AddHabitSheet(habitManager: habitManager)
             }
+            .fullScreenCover(isPresented: $showingCelebration) {
+                CelebrationView(isShowing: $showingCelebration)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .dailyGoalsCompleted)) { _ in
+                showingCelebration = true
+            }
         }
     }
 }
@@ -60,9 +105,15 @@ struct DailySummaryCard: View {
                         .font(.headline)
                         .foregroundColor(.primary)
                     
-                    Text("\(habitManager.completedTodayCount) de \(habitManager.habits.count) concluídos")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    if habitManager.habits.isEmpty {
+                        Text("Nenhum hábito configurado")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("\(habitManager.completedTodayCount) de \(habitManager.habits.filter { $0.shouldBeDoneToday() }.count) concluídos")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
                 }
                 
                 Spacer()
@@ -73,24 +124,41 @@ struct DailySummaryCard: View {
                         .stroke(Color.gray.opacity(0.2), lineWidth: 6)
                         .frame(width: 60, height: 60)
                     
-                    Circle()
-                        .trim(from: 0, to: habitManager.habits.isEmpty ? 0 : Double(habitManager.completedTodayCount) / Double(habitManager.habits.count))
-                        .stroke(Color.blue, style: StrokeStyle(lineWidth: 6, lineCap: .round))
-                        .frame(width: 60, height: 60)
-                        .rotationEffect(.degrees(-90))
-                        .animation(.easeInOut, value: habitManager.completedTodayCount)
-                    
-                    Text("\(habitManager.habits.isEmpty ? 0 : Int(Double(habitManager.completedTodayCount) / Double(habitManager.habits.count) * 100))%")
-                        .font(.caption)
-                        .fontWeight(.semibold)
+                    if !habitManager.habits.isEmpty {
+                        let todayHabits = habitManager.habits.filter { $0.shouldBeDoneToday() }
+                        let progress = todayHabits.isEmpty ? 0 : Double(habitManager.completedTodayCount) / Double(todayHabits.count)
+                        
+                        Circle()
+                            .trim(from: 0, to: progress)
+                            .stroke(Color.blue, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                            .frame(width: 60, height: 60)
+                            .rotationEffect(.degrees(-90))
+                            .animation(.easeInOut, value: habitManager.completedTodayCount)
+                        
+                        Text("\(Int(progress * 100))%")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                    } else {
+                        Text("0%")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                    }
                 }
             }
             
             // Quick stats
-            HStack(spacing: 20) {
-                StatItem(title: "Sequência", value: "\(habitManager.longestStreak)", color: .green)
-                StatItem(title: "Total", value: "\(habitManager.totalHabitsCompleted)", color: .blue)
-                StatItem(title: "Média", value: "\(Int(habitManager.averageCompletionRate * 100))%", color: .orange)
+            if !habitManager.habits.isEmpty {
+                HStack(spacing: 20) {
+                    StatItem(title: "Sequência", value: "\(habitManager.longestStreak)", color: .green)
+                    StatItem(title: "Total", value: "\(habitManager.totalHabitsCompleted)", color: .blue)
+                    StatItem(title: "Média", value: "\(Int(habitManager.averageCompletionRate * 100))%", color: .orange)
+                }
+            } else {
+                HStack(spacing: 20) {
+                    StatItem(title: "Hábitos", value: "0", color: .gray)
+                    StatItem(title: "Concluídos", value: "0", color: .gray)
+                    StatItem(title: "Média", value: "0%", color: .gray)
+                }
             }
         }
         .padding()

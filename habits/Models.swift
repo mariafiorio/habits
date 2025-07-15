@@ -101,10 +101,10 @@ struct UserProfile: Codable {
     var theme: String
     
     init() {
-        self.name = "Usuário"
+        self.name = ""
         self.joinDate = Date()
-        self.dailyGoal = 3
-        self.weeklyGoal = 21
+        self.dailyGoal = 0
+        self.weeklyGoal = 0
         self.notifications = true
         self.theme = "system"
     }

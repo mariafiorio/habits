@@ -17,9 +17,6 @@ class HabitManager: ObservableObject {
     init() {
         loadHabits()
         loadProfile()
-        if habits.isEmpty {
-            createSampleHabits()
-        }
     }
     
     private func createSampleHabits() {
@@ -47,15 +44,57 @@ class HabitManager: ObservableObject {
         formatter.dateFormat = "yyyy-MM-dd"
         let today = formatter.string(from: Date())
         
-        if habits[index].completedDates.contains(today) {
+        let wasCompleted = habits[index].completedDates.contains(today)
+        
+        if wasCompleted {
             habits[index].completedDates.remove(today)
             habits[index].streak = max(0, habits[index].streak - 1)
         } else {
             habits[index].completedDates.insert(today)
             habits[index].streak += 1
+            
+            // Check if all daily goals are completed
+            if hasCompletedAllDailyGoals() {
+                showCelebration()
+            }
         }
         
         saveHabits()
+    }
+    
+    // Check if user has completed all daily goals
+    func hasCompletedAllDailyGoals() -> Bool {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let today = formatter.string(from: Date())
+        
+        let todayHabits = habits.filter { $0.shouldBeDoneToday() }
+        let completedToday = todayHabits.filter { $0.completedDates.contains(today) }
+        
+        return !todayHabits.isEmpty && completedToday.count == todayHabits.count
+    }
+    
+    // Show celebration notification
+    private func showCelebration() {
+        // This will be handled by the UI
+        NotificationCenter.default.post(name: .dailyGoalsCompleted, object: nil)
+    }
+    
+    // Get motivational message
+    func getMotivationalMessage() -> String {
+        let messages = [
+            "Incrível! Você está no caminho certo! 🚀",
+            "Parabéns! Cada pequeno passo conta! 💪",
+            "Você está construindo um futuro melhor! 🌟",
+            "Consistência é a chave do sucesso! 🔑",
+            "Continue assim! Você está arrasando! 🎯",
+            "Cada dia é uma nova oportunidade! ✨",
+            "Você está mais forte a cada dia! 💎",
+            "Mantenha o foco, você consegue! 🎪",
+            "Suas escolhas hoje moldam seu amanhã! 🌈",
+            "Você é capaz de coisas incríveis! 🏆"
+        ]
+        return messages.randomElement() ?? messages[0]
     }
     
     func addHabit(name: String, icon: String, color: Color, target: Int, selectedDays: Set<Int> = [], reminders: [HabitReminder] = [], isAllDays: Bool = true) {
@@ -131,4 +170,9 @@ class HabitManager: ObservableObject {
             userProfile = decoded
         }
     }
+}
+
+// MARK: - Notification Names
+extension Notification.Name {
+    static let dailyGoalsCompleted = Notification.Name("dailyGoalsCompleted")
 }
